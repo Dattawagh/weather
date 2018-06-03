@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>  
+<style>
+	.containerB{
+		border: 1px solid black;
+	}
+	
+	</style>
+<body>
+
+<div ng-app="myApp" class="container" align="center" >
+
+<h1>Get Weather For your city</h1>
+<div ng-controller="MainCtrl">
+<div class="row">
+	<div class="col-md-6 col-md-offset-3">
+		<input class="form-control" id="searchTextField" ng-change="changeCity()" ng-model="searchtext" type="text" size="50" placeholder="Type your city name">
+	</div>
+</div>
+<br>
+ 
+    <div class="row">
+		<div class="col-md-6 col-md-offset-3">
+		
+		<div class="well" ng-show="!noResults && wResult.city" id="weatherContainer">
+			<h2>Weather Information for {{wResult.city}}</h2>
+			<h5>Captured on: {{wResult.date}}</h5>
+			<h4>Temprature - {{wResult.temp}}&deg; Celcius</h4>
+			<h3>{{wResult.desc}}</h3>
+		</div>
+		<div class="alert alert-danger" ng-show="noResults"><p>Sorry, no information found for given location</p></div>
+		
+	</div>
+
+</div>
+</div>
+<script>
+var app = angular.module('myApp', []);
+
+
+app.controller('MainCtrl', function($scope, $http, $timeout) {
+	var inputChangedPromise;
+	$scope.noResults;
+	$scope.wResult={};
+	$scope.changeCity = function(){
+		
+	    if(inputChangedPromise){
+	           $timeout.cancel(inputChangedPromise);
+	       }
+	       inputChangedPromise =$timeout(function(){
+			var yql = 'https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20weather.forecast%20where%20woeid%20in%20(select%20woeid%20from%20geo.places(1)%20where%20text%3D%22'+$scope.searchtext+'%22)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys';
+		    $http.get(yql)
+		    .then(function(response) {
+				if(response.data.query.count){
+					var condition = response.data.query.results.channel.item.condition;
+
+					$scope.wResult.city = $scope.searchtext;
+					$scope.wResult.temp = $scope.convertTocel(condition.temp);
+					$scope.wResult.desc = condition.text;
+					$scope.wResult.date = condition.date;
+					
+					$scope.noResults = false;
+				} else{
+					$scope.noResults = true;
+					$scope.wResult = {};
+				}
+		    });	
+		},1000);
+	};
+	
+	$scope.convertTocel = function(valNum){
+		return ((valNum-32) / 1.8).toFixed(0);
+	};
+});
+
+
+</script>
+
+</body>
+</html>
